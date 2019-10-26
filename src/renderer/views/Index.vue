@@ -1,18 +1,8 @@
 <template>
-    <div>
+    <div class="container" :style="{height:height+'px'}">
         <div class="title-bar">
             <div class="title-menu">
-                <Dropdown trigger='click' @on-click='onTitleMenuClick'>
-                    <a href="javascript:void(0)">
-                        PicGather - {{ version }}
-                        <Icon type="ios-arrow-down"></Icon>
-                    </a>
-                    <DropdownMenu slot="list">
-                        <DropdownItem name='checkUpdate'>检查更新</DropdownItem>
-                        <DropdownItem name='restart'>重启启动</DropdownItem>
-                        <DropdownItem name='about'>关于我们</DropdownItem>
-                    </DropdownMenu>
-                </Dropdown>
+                <a href="javascript:void(0)" style="color:#515a6e">PicGather</a>
             </div>
             <div class="handle-bar" v-if="os === 'win32'"> 
                 <Icon type="md-remove" :size='16' color='#ff9900' @click="onTitleMenuClick('minsize')"/>
@@ -20,25 +10,9 @@
             </div>
         </div>
         <div id="main">
-        <div>
-            <Row>
-                <Col span='6'>
-                        <RadioGroup v-model="model" type="button">
-                        <Radio label="image">图片采集</Radio>
-                        <Radio label="video" disabled>视频采集（开发中）</Radio>
-                    </RadioGroup>
-                </Col>
-                <Col span='18'>
-                    <div style="text-align:right">
-                        <Tag type="dot" color="success">{{reptile.msgCurrent}}</Tag>
-                    </div>
-                </Col>
-            </Row>
-            </div>
-            <Divider />
-            <div>
+            <div style="margin-top:20px">
                 <Form ref="formInline" inline :label-width="80">
-                    <FormItem label='采集源'>
+                    <FormItem label='收藏源'>
                         <Select :disabled="loading" v-model="config.siteIndex" style="width:200px" @on-change="originSourceChange">
                             <Option :value="index" :key="index" v-for="(item,index) in originSource">{{ item.name }}</Option>
                         </Select>
@@ -48,9 +22,9 @@
                             <Option :value="index" :key="index" v-for="(item,index) in originSource[config.siteIndex].tags">{{ item.name }}</Option>
                         </Select>
                     </FormItem>
-                    <FormItem label='采集延迟(ms)'>
+                    <FormItem label='拉取延迟(ms)'>
                         <Slider style="width:200px;" :disabled="loading" @on-change="saveConfig" v-model="config.timeout"
-                            :min='10' :max='2000' :step='10' show-tip='always' :tip-format='(value)=>{return `${value} ms`}'></Slider>
+                            :min='10' :max='2000' :step='10' show-tip='hover' :tip-format='(value)=>{return `${value} ms`}'></Slider>
                     </FormItem>
                     <br>
                     <FormItem label='保存目录'>
@@ -64,10 +38,10 @@
                                 <span slot="open">开启</span>
                                 <span slot="close">关闭</span>
                             </i-switch>
-                            <Button v-if="!loading" @click="getData" type="success" style="margin-left:10px"><Icon type="md-cloud-download" /> 立即进行自动采集</Button>
-                            <Button v-else @click="stopRunning" type="error" style="margin-left:10px"><Icon type="md-close-circle" /> 立即停止采集</Button>
-                            <Button @click="settingRS('show')" type="primary" style="margin-left:10px"><Icon type="md-cog" /> 设置采集源</Button>
-                            <Button @click="getOriginSource(true)" style="margin-left:10px"><Icon type="md-cog" /> 同步采集源</Button>
+                            <Button v-if="!loading" @click="getData" type="success" style="margin-left:10px"><Icon type="md-cloud-download" /> 立即进行自动收藏</Button>
+                            <Button v-else @click="stopRunning" type="error" style="margin-left:10px"><Icon type="md-close-circle" /> 立即停止收藏</Button>
+                            <Button @click="settingRS('show')" type="primary" style="margin-left:10px"><Icon type="md-cog" /> 设置收藏源</Button>
+                            <Button @click="getOriginSource(true)" style="margin-left:10px"><Icon type="md-cog" /> 同步收藏源</Button>
                         </template>
                     </FormItem>
                 </Form>
@@ -75,40 +49,76 @@
             <Divider />
             <div>
                 <div v-if="!loading && (!reptile.data || reptile.data.length==0) " style="width:100%;text-align:center">
-                    <Icon type="md-clock" :size='100'/>
-                    <p class="mt10">准备就绪，点击「立即进行自动采集」开始工作</p>
+                    <img src="../assets/ready.png" width="100px">
+                    <p class="mt10">准备就绪，点击「立即进行自动收藏」开始工作 😊</p>
                 </div>
                 <div v-else-if="loading && (!reptile.data || reptile.data.length==0) " style="width:100%;text-align:center">
                     <Icon class="ivu-load-loop" type="md-refresh" :size='100'/>
-                    <p class="mt10">页面分析中，稍等片刻就可以看到工作进度~</p>
+                    <p class="mt10">页面分析中，稍等片刻就可以看到工作进度 🤔</p>
                 </div> 
                 <div v-else id="records">
                     <template v-for="(item,index) in reptile.data" >
-                        <Alert show-icon v-if="item.status==0">【准备就绪】{{item.name}}</Alert>
-                        <Alert show-icon type="success" v-else-if="item.status==1">【采集成功】{{item.name}}</Alert>
-                        <Alert show-icon type="warning" v-else-if="item.status==2">【采集异常】{{item.name}}</Alert>
+                        <Alert show-icon v-if="item.status==0">「等待数据分析」{{item.name}}</Alert>
+                        <Alert show-icon type="success" v-else-if="item.status==1">「已加入收藏队列」{{item.name}}</Alert>
+                        <Alert show-icon type="warning" v-else-if="item.status==2">「收藏异常」{{item.name}}</Alert>
                     </template>
                 </div>
             </div>
         </div>
+        <div id="status">
+            <Row>
+                <Col span='8'>
+                    <div class="tc"><span class="dot"></span> 队列待收藏数：{{countWait}}</div>
+                </Col>
+                <Col span='8'>
+                    <div class='tc'><span class="dot success"></span> 已完成收藏数：{{countSuccess}}</div>
+                </Col>
+                <Col span='8'>
+                    <div class="tc"><span class="dot error"></span> 收藏异常数：{{countError}}</div>
+                </Col>
+            </Row>
+        </div>
+        <div id="footer">
+            <Row>
+                <Col span='3'>
+                    <div class="cur" @click="onTitleMenuClick('checkUpdate')"><Icon type="md-cloud-upload" /> 检查更新</div>
+                </Col>
+                <Col span='3'>
+                    <div class="cur" @click="onTitleMenuClick('restart')"><Icon type="md-redo" /> 重新启动</div>
+                </Col>
+                <Col span='3'>
+                    <div class="cur" @click="onTitleMenuClick('bug')"><Icon type="md-bug" /> 提交BUG</div>
+                </Col>
+                <Col span='3'>
+                    <div class="cur" @click="onTitleMenuClick('idea')"><Icon type="ios-bulb" /> 提交想法</div>
+                </Col>
+                <Col span='3'>
+                    <div class="cur" @click="onTitleMenuClick('use-agreement')"><Icon type="md-color-palette" /> 使用协议</div>
+                </Col>
+                <Col span='5'>
+                    <div class="cur" @click="onTitleMenuClick('about')"><Icon type="md-alert" /> 关于软件 | 当前版本：{{version}}</div>
+                </Col>
+                <Col span='4'>
+                    <div class="cur" @click="onTitleMenuClick('node')"><Icon type="md-flame" :style="`color:${config.node==1 ? '#19be6b':'#2d8cf0'}`"/> {{config.node==1 ? '国内':'国外'}}节点（点击切换）</div>
+                </Col>
+            </Row>
+        </div>
         <Modal title="关于我们" v-model="showAbout">
             <p class="fs14">软件名称：PicGather</p>
-            <p class="fs14">项目主页：<a @click="openUrl('https://github.com/Licoy/pic-gather')">https://github.com/Licoy/pic-gather</a></p>
+            <p class="fs14">项目Github主页：<a @click="openUrl('https://github.com/Licoy/pic-gather')">https://github.com/Licoy/pic-gather</a></p>
+            <p class="fs14">项目Gitee主页：<a @click="openUrl('https://gitee.com/licoy/pic-gather')">https://gitee.com/licoy/pic-gather</a></p>
             <p class="fs14">使用声明：此项目仅供学习交流使用，请勿使用于商业及非法用途，具体条款请参见于项目主页。</p>
         </Modal>
-        <Modal title="采集源设置" v-model="setting.show" width="700px" :mask-closable='false' :closable='false'>
-            <p style="font-size:12px">官方采集源：<a @click="openUrl('https://raw.githubusercontent.com/Licoy/pic-gather/master/reptile-source.json')"
-                >https://raw.githubusercontent.com/Licoy/pic-gather/master/reptile-source.json</a></p>
-            <br>
-            <p style="font-size:12px">采集源规则：<a @click="openUrl('https://github.com/Licoy/pic-gather/wiki/reptile-source-rules')"
-            >https://github.com/Licoy/pic-gather/wiki/reptile-source-rules</a></p>
+        <Modal title="收藏源设置" v-model="setting.show" width="700px" :mask-closable='false' :closable='false'>
+            <p style="font-size:12px">收藏源规则：<a @click="openUrl('https://github.com/Licoy/pic-gather/wiki/star-rules')"
+            >https://github.com/Licoy/pic-gather/wiki/star-rules</a></p>
             <br>
             <p style="font-size:12px">支持版本号：{{$reptileVersion}}（向下兼容）</p>
             <Divider />
             <Form :label-width='100'>
-                <FormItem label='采集源地址：'>
+                <FormItem label='收藏源地址：'>
                     <template>
-                        <Input v-model="setting.tempRsUrl" :disabled="loading" placeholder="请输入采集源地址" />
+                        <Input v-model="setting.tempRsUrl" :disabled="loading" placeholder="请输入收藏源地址" />
                     </template>
                 </FormItem>
             </Form>
@@ -128,6 +138,15 @@ export default {
     computed:{
         runningx() {
             return this.$store.state.Collect.running;
+        },
+        countWait(){
+            return this.$store.state.Collect.count.wait;
+        },
+        countSuccess(){
+            return this.$store.state.Collect.count.success;
+        },
+        countError(){
+            return this.$store.state.Collect.count.error;
         }
     },
     watch: {
@@ -140,6 +159,7 @@ export default {
         this.version = version
         this.os = process.platform
         this.$store.commit('STOP')
+        this.$store.commit('COUNT_RESET')
         this.config = this.$db.get('config').value()
         this.saveConfig(true)
         await this.getOriginSource(false)
@@ -158,10 +178,21 @@ export default {
         ipcRenderer.on('sys-check-update', (event, arg) => {
             this.checkUpdate(true)
         })
+        ipcRenderer.on('img-success', (event, arg) => {
+            this.$store.commit('COUNT','success');
+        })
+        ipcRenderer.on('img-error', (event, arg) => {
+            this.$store.commit('COUNT','error');
+        })
         this.checkUpdate(false)
+        this.height = window.innerHeight;
+        window.onresize = ()=>{
+            this.height = window.innerHeight;
+        }
     },
     data(){
         return {
+            height:750,
             version:'1.0.0',
             model:'image',
             os:null,
@@ -183,7 +214,7 @@ export default {
         async getOriginSource(refresh=false){
             if(!this.$db.has('origins').value() || refresh===true){
                 let load = this.$Message.loading({
-                    content: '采集源站资源同步中...',
+                    content: '收藏源站资源同步中...',
                     duration: 0
                 });
                 try {
@@ -200,13 +231,13 @@ export default {
                     this.saveConfig()
                     load()
                     this.$db.set('origins',rs).write()
-                    this.$Message.success("采集源同步成功")
+                    this.$Message.success("收藏源同步成功")
                 } catch (error) {
                     load()
                     console.error(error)
                     this.$Modal.confirm({
                         title: '提示',
-                        content: '<p>采集源站资源加载失败，是否进行重新加载？</p><br><p>提示：如果您多次加载失败，请到Github项目主页提交issue。</p>',
+                        content: '<p>收藏源站资源加载失败，是否进行重新加载？</p>',
                         onOk: () => {
                             this.getOriginSource(true)
                         }
@@ -253,7 +284,7 @@ export default {
                 this.startReptile(this.originSource[this.config.siteIndex], this.config.tagIndex, this)
             }catch(e){
                 this.$store.commit('STOP');
-                this.$Message.error("采集出错")
+                this.$Message.error("收藏执行出错")
             }
         },
         stopRunning(){
@@ -286,14 +317,18 @@ export default {
                 });
             }
             try {
-                let res = await this.$http.get('https://api.github.com/repos/Licoy/pic-gather/releases/latest')
+                let updateUrl = 'https://gitee.com/api/v5/repos/licoy/pic-gather/releases/latest'
+                if(this.config.node==2){
+                    updateUrl = 'https://api.github.com/repos/Licoy/pic-gather/releases/latest'
+                }
+                let res = await this.$http.get(updateUrl)
                 if(compareVersion2Update('v'+this.version,res.data.tag_name)){
                     load()
                     this.$Modal.confirm({
                         title: '提示',
                         content: '<p>检测到有新的版本'+res.data.tag_name+'，是否立即前往更新？</p>',
                         onOk: () => {
-                            this.openUrl('https://github.com/Licoy/pic-gather/releases')
+                            this.openNodeUrl('/releases')
                         }
                     });
                 }else{
@@ -333,10 +368,30 @@ export default {
                 this.showAbout = true
             }else if(name=='minsize'){
                 ipcRenderer.send('min', {})
+            }else if(name=='bug'){
+                let title = `[ ${version} ] - bug反馈`
+                this.openUrl('https://github.com/Licoy/pic-gather/issues/new?assignees=&labels=bug&template=bug.md&title='+title)
+            }else if(name=='idea'){
+                let title = `[ ${version} ] - 想法`
+                this.openUrl('https://github.com/Licoy/pic-gather/issues/new?assignees=&labels=需求&template=demand.md&title='+title)
+            }else if(name=='use-agreement'){
+                this.openNodeUrl('/blob/master/use-agreement.md')
+            }else if(name=='github'){
+                this.openNodeUrl('')
+            }else if(name=='node'){
+                this.config.node = this.config.node==1 ? 2 : 1;
+                this.saveConfig()
             }
         },
         openUrl(url){
             shell.openExternal(url)
+        },
+        openNodeUrl(path){
+            let url = 'https://gitee.com/licoy/pic-gather'
+            if(this.config.node==2){
+                url = 'https://github.com/Licoy/pic-gather'
+            }
+            this.openUrl(url + path)
         },
         settingRS(mode){
             if(mode=='show'){
@@ -357,8 +412,14 @@ export default {
 }
 </script>
 <style lang="scss">
+    .container{
+        background-color: #f7f8fa;
+    }
     #main{
         padding:10px
+    }
+    .tc{
+        text-align: center;
     }
     .title-bar{
         -webkit-app-region: drag;
@@ -383,7 +444,46 @@ export default {
         margin-top:10px;
     }
     #records{
-        height: 455px;
+        height: 435px;
         overflow:scroll
+    }
+    #footer,#status{
+        $height:40px;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        height: $height;
+        background-color: #17233d;
+        color:#f8f8f9;
+        font-size: 14px;
+        line-height: $height;
+        padding:0 10px;
+        &#status{
+           bottom: 40px; 
+           background-color: #17233d;
+           .dot{
+               display: inline-block;
+               $wh:10px;
+               width: $wh;
+               height: $wh;
+               border-radius: $wh / 2;
+               background-color:#ff9900;
+               margin-right: 5px;
+               &.success{
+                   background-color:#19be6b;
+               }
+               &.error{
+                   background-color:#ed4014;
+               }
+           }
+           border-bottom:1px solid #808695;
+        }
+    }
+    .cur{
+        cursor: pointer;
+        transition: all .2s;
+        &:hover{
+            color:#c5c8ce;
+        }
     }
 </style>
